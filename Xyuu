@@ -1,138 +1,108 @@
--- // D-DAY HUB ULTIMATE (2026 UPDATED) //
--- // Fitur: Aimbot, FOV Tengah, ESP, God Mode, & Auto Shoot //
+-- // D-DAY HUB FIXED BY AI (2026) //
+-- // Aimbot FOV Tetap di Tengah & GUI Terintegrasi //
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
 
--- // 1. VARIABEL KONTROL
-_G.AimbotEnabled = false
-_G.ESPEnabled = false
-_G.GodMode = false
-_G.AutoShoot = false
-_G.FOVSize = 120
-
--- // 2. FOV CIRCLE SETUP
+-- // 1. LOGIKA FOV (Layar Tengah)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = true
 FOVCircle.Thickness = 1.5
-FOVCircle.Color = Color3.fromRGB(120, 1, 255)
+FOVCircle.Color = Color3.fromRGB(120, 1, 255) -- Warna Ungu sesuai Tema
 FOVCircle.Transparency = 1
 FOVCircle.Filled = false
 
--- // 3. GUI SETUP
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+-- // 2. VARIABEL KONTROL
+_G.AimbotEnabled = false
+_G.FOVSize = 120
+
+-- // 3. GUI SETUP (Disederhanakan & Diperbaiki)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game:GetService("CoreGui") -- Agar tidak hilang saat mati
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 220, 0, 320)
-MainFrame.Draggable = true
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
 MainFrame.Active = true
-Instance.new("UICorner", MainFrame)
+MainFrame.Draggable = true -- Agar menu bisa digeser
 
-local Layout = Instance.new("UIListLayout", MainFrame)
-Layout.Padding = UDim.new(0, 8)
-Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+local UICorner = Instance.new("UICorner")
+UICorner.Parent = MainFrame
 
-local function CreateButton(text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Parent = MainFrame
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.FredokaOne
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
-    return btn
-end
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "D-DAY HUB - FIXED"
+Title.TextColor3 = Color3.fromRGB(120, 1, 255)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.LuckiestGuy
+Title.TextSize = 25
 
--- // 4. KONTROL TOMBOL
-CreateButton("Aimbot: OFF", function(btn)
+-- // 4. TOMBOL AKTIVASI AIMBOT
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Parent = MainFrame
+ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.3, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+ToggleBtn.Text = "Enable Aimbot: OFF"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.FredokaOne
+
+Instance.new("UICorner", ToggleBtn)
+
+ToggleBtn.MouseButton1Click:Connect(function()
     _G.AimbotEnabled = not _G.AimbotEnabled
-    btn.Text = "Aimbot: " .. (_G.AimbotEnabled and "ON" or "OFF")
-    btn.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(120, 1, 255) or Color3.fromRGB(50, 50, 50)
+    ToggleBtn.Text = "Enable Aimbot: " .. (_G.AimbotEnabled and "ON" or "OFF")
+    ToggleBtn.BackgroundColor3 = _G.AimbotEnabled and Color3.fromRGB(120, 1, 255) or Color3.fromRGB(80, 80, 80)
 end)
 
-CreateButton("Auto Shoot: OFF", function(btn)
-    _G.AutoShoot = not _G.AutoShoot
-    btn.Text = "Auto Shoot: " .. (_G.AutoShoot and "ON" or "OFF")
-    btn.BackgroundColor3 = _G.AutoShoot and Color3.fromRGB(255, 100, 0) or Color3.fromRGB(50, 50, 50)
-end)
+-- // 5. FUNGSI MENCARI TARGET (Filter Tengah Layar)
+local function GetClosestTarget()
+    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local Target = nil
+    local MaxDist = _G.FOVSize
 
-CreateButton("ESP Musuh: OFF", function(btn)
-    _G.ESPEnabled = not _G.ESPEnabled
-    btn.Text = "ESP Musuh: " .. (_G.ESPEnabled and "ON" or "OFF")
-    btn.BackgroundColor3 = _G.ESPEnabled and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(50, 50, 50)
-end)
-
-CreateButton("God Mode: OFF", function(btn)
-    _G.GodMode = not _G.GodMode
-    btn.Text = "God Mode: " .. (_G.GodMode and "ON" or "OFF")
-    btn.BackgroundColor3 = _G.GodMode and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(50, 50, 50)
-end)
-
--- // 5. LOGIKA INTI
-local function GetTarget()
-    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local target = nil
-    local maxDist = _G.FOVSize
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Team ~= LocalPlayer.Team and v.Character and v.Character:FindFirstChild("Head") then
-            local pos, onScreen = Camera:WorldToViewportPoint(v.Character.Head.Position)
-            if onScreen then
-                local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                if dist < maxDist then
-                    maxDist = dist
-                    target = v
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+            -- Cek apakah musuh (Team Check)
+            if v.Team ~= LocalPlayer.Team then
+                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.Head.Position)
+                if OnScreen then
+                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
+                    if Dist < MaxDist then
+                        MaxDist = Dist
+                        Target = v
+                    end
                 end
             end
         end
     end
-    return target
+    return Target
 end
 
+-- // 6. LOOPING UTAMA (PENTING: Agar tetap di tengah)
 RunService.RenderStepped:Connect(function()
-    -- FOV Update
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    -- Update Lingkaran FOV selalu ke tengah layar
+    local CenterPos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FOVCircle.Position = CenterPos
     FOVCircle.Radius = _G.FOVSize
     
-    -- God Mode Logic
-    if _G.GodMode and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-    end
-
-    -- Aimbot & AutoShoot Logic
-    local target = GetTarget()
-    if _G.AimbotEnabled and target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
-        
-        -- Auto Shoot (Simulasi klik kiri jika target terkunci)
-        if _G.AutoShoot then
-            mouse1press()
-            task.wait(0.05)
-            mouse1release()
-        end
-    end
-    
-    -- ESP Logic (Highlight musuh)
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local highlight = p.Character:FindFirstChild("ESPHighlight")
-            if _G.ESPEnabled and p.Team ~= LocalPlayer.Team then
-                if not highlight then
-                    highlight = Instance.new("Highlight", p.Character)
-                    highlight.Name = "ESPHighlight"
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                end
-            else
-                if highlight then highlight:Destroy() end
-            end
+    -- Logika Aimbot
+    if _G.AimbotEnabled then
+        local Target = GetClosestTarget()
+        if Target then
+            -- Mengunci kamera ke kepala target
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Target.Character.Head.Position)
         end
     end
 end)
+
+-- Pesan Berhasil
+print("D-Day Hub Berhasil Dimuat!")
