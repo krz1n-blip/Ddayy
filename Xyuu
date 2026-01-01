@@ -1,0 +1,243 @@
+--// D-day Aimbot + ESP -- Made by System74842 | Gemini
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService") 
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local CoreGui = game:GetService("CoreGui")
+
+-- Beállítások
+local ESPColorEnemy = Color3.fromRGB(255,0,0) -- Ellenség
+local ESPColorAlly = Color3.fromRGB(0,255,0) -- Szövetséges
+local AimbotEnabled = false
+local ESPEnabled = true 
+local DrawingSupported = pcall(function() Drawing.new("Text") end) 
+
+-- ESP tároló
+local ESPStorage = {} 
+
+-- Gui Setup
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.ResetOnSpawn = false
+
+-- Aimbot Gomb (Y/Z) - INICIALIZÁLÁS
+local AimbotButton = Instance.new("TextButton", ScreenGui)
+AimbotButton.Size = UDim2.new(0,120,0,50)
+AimbotButton.Position = UDim2.new(0.05,0,0.85,0)
+AimbotButton.TextColor3 = Color3.fromRGB(255,255,255)
+AimbotButton.Name = "AimbotButton"
+
+-- ESP Gomb (X) - INICIALIZÁLÁS
+local ESPButton = Instance.new("TextButton", ScreenGui)
+ESPButton.Size = UDim2.new(0,120,0,50)
+ESPButton.Position = UDim2.new(0.05,0,0.85, -60) 
+ESPButton.TextColor3 = Color3.fromRGB(255,255,255)
+ESPButton.Name = "ESPButton"
+
+-- =========================================================================
+-- FUNKCIÓK DEFINIÁLÁSA
+-- =========================================================================
+
+-- Segédfüggvény: Aimbot állapotának váltása és gomb frissítése (Y/Z)
+local function ToggleAimbot()
+    AimbotEnabled = not AimbotEnabled
+    local status = AimbotEnabled and "ON" or "OFF"
+    AimbotButton.Text = "[Y/Z] Aimbot " .. status -- VÁLTOZTATVA: Y/Z megjelenítése
+    AimbotButton.BackgroundColor3 = AimbotEnabled and Color3.fromRGB(200,0,0) or Color3.fromRGB(50,50,50)
+end
+
+-- Segédfüggvény: ESP állapotának váltása és gomb frissítése (X)
+local function ToggleESP()
+    if not DrawingSupported then return end
+    
+    ESPEnabled = not ESPEnabled
+    local status = ESPEnabled and "ON" or "OFF"
+    ESPButton.Text = "[X] ESP " .. status
+    ESPButton.BackgroundColor3 = ESPEnabled and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50)
+    
+    if not ESPEnabled then
+        for _, objs in pairs(ESPStorage) do
+            if objs.Name then objs.Name.Visible = false end
+            if objs.Dot then objs.Dot.Visible = false end
+        end
+    end
+end
+
+-- KEZDŐ ÁLLAPOT BEÁLLÍTÁSA
+ToggleAimbot() 
+
+if not DrawingSupported then
+    ESPButton.Text = "ESP N/A"
+    ESPButton.BackgroundColor3 = Color3.fromRGB(100,100,100)
+    ESPButton.MouseButton1Click:Connect(function() print("Drawing functions not supported by executor.") end)
+else
+    ToggleESP()
+    ESPButton.MouseButton1Click:Connect(ToggleESP)
+end
+
+AimbotButton.MouseButton1Click:Connect(ToggleAimbot)
+
+-- Billentyűparancsok figyelése
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- JAVÍTÁS: Ellenőrzés Y ÉS Z billentyűre is
+    if input.KeyCode == Enum.KeyCode.Y or input.KeyCode == Enum.KeyCode.Z then 
+        ToggleAimbot()
+    elseif input.KeyCode == Enum.KeyCode.X and DrawingSupported then 
+        ToggleESP()
+    end
+end)
+
+
+-- =========================================================================
+-- LÁBLÉC ÉS PSIZCHOLÓGIAI ABLAK (EXTRA GUI)
+-- =========================================================================
+
+-- LÁBLÉC (Jobb alsó sarok)
+local FooterLabel = Instance.new("TextLabel", ScreenGui) -- VÁLTOZTATVA: ScreenGui alá került
+FooterLabel.Size = UDim2.new(0, 200, 0, 20)
+FooterLabel.Position = UDim2.new(1, -205, 1, -25) 
+FooterLabel.BackgroundTransparency = 1
+FooterLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+FooterLabel.TextStrokeTransparency = 0
+FooterLabel.TextSize = 12
+FooterLabel.Text = "Made by System74842 | Gemini" 
+
+-- PSIZCHOLÓGIAI ABLAK (Felugró ablak a képernyő közepén)
+local PopupFrame = Instance.new("Frame", ScreenGui)
+PopupFrame.Size = UDim2.new(0, 250, 0, 150)
+PopupFrame.Position = UDim2.new(0.5, -125, 0.5, -75) 
+PopupFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PopupFrame.BorderSizePixel = 2
+
+local PopupText = Instance.new("TextLabel", PopupFrame)
+PopupText.Size = UDim2.new(1, 0, 0, 40)
+PopupText.Position = UDim2.new(0, 0, 0.1, 0)
+PopupText.BackgroundTransparency = 1
+PopupText.TextColor3 = Color3.fromRGB(255, 255, 255)
+PopupText.TextSize = 18
+PopupText.Text = "Pls Sub My Channel"
+
+-- COPY GOMB (ZÖLD)
+local CopyButton = Instance.new("TextButton", PopupFrame)
+CopyButton.Size = UDim2.new(0.4, 0, 0, 40)
+CopyButton.Position = UDim2.new(0.08, 0, 0.6, 0)
+CopyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyButton.TextSize = 16
+CopyButton.Text = "Copy (Link)"
+
+-- F*** UP GOMB (PIROS)
+local DeclineButton = Instance.new("TextButton", PopupFrame)
+DeclineButton.Size = UDim2.new(0.4, 0, 0, 40)
+DeclineButton.Position = UDim2.new(0.58, 0, 0.6, 0)
+DeclineButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+DeclineButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+DeclineButton.TextSize = 16
+DeclineButton.Text = "F*** Up"
+
+-- GOMB FUNKCIÓK CSATLAKOZTATÁSA
+local ChannelLink = "Https://www.youtube.com/channel/UCAwvgGXU9P0AbX13XI8dbDg" 
+local setclipboard = setclipboard or function(text) 
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Link Másolva",
+        Text = "Link: " .. text,
+        Duration = 5
+    })
+end
+
+CopyButton.MouseButton1Click:Connect(function()
+    setclipboard(ChannelLink) 
+    PopupFrame:Destroy() 
+end)
+
+DeclineButton.MouseButton1Click:Connect(function()
+    PopupFrame:Destroy() 
+end)
+
+-- =========================================================================
+-- ESP ÉS AIMBOT LOGIKA
+-- =========================================================================
+
+function CreateESP(player)
+    if player == LocalPlayer or not DrawingSupported then return end
+
+    local Name = Drawing.new("Text")  
+    Name.Size = 16  
+    Name.Center = true  
+    Name.Outline = true  
+    Name.Text = player.Name  
+    
+    local Dot = Drawing.new("Circle")  
+    Dot.Filled = true  
+    Dot.Radius = 4  
+    
+    ESPStorage[player] = {Name = Name, Dot = Dot} 
+end
+
+Players.PlayerAdded:Connect(CreateESP)
+for _,plr in pairs(Players:GetPlayers()) do
+    CreateESP(plr)
+end
+
+local function IsEnemy(player)
+    if not player.Team or not LocalPlayer.Team then return false end
+    return player.Team ~= LocalPlayer.Team
+end
+
+RunService.RenderStepped:Connect(function()
+    if not ESPEnabled or not DrawingSupported then return end 
+
+    for plr,objs in pairs(ESPStorage) do
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local HRP = plr.Character.HumanoidRootPart
+            local Pos, OnScreen = Camera:WorldToViewportPoint(HRP.Position)
+
+            if OnScreen then  
+                local Color = IsEnemy(plr) and ESPColorEnemy or ESPColorAlly  
+                objs.Name.Color = Color  
+                objs.Dot.Color = Color  
+                  
+                objs.Name.Position = Vector2.new(Pos.X, Pos.Y - 20) 
+                objs.Name.Visible = true  
+                  
+                objs.Dot.Position = Vector2.new(Pos.X, Pos.Y)  
+                objs.Dot.Visible = true  
+            else  
+                objs.Name.Visible = false  
+                objs.Dot.Visible = false  
+            end  
+        else  
+            objs.Name.Visible = false  
+            objs.Dot.Visible = false  
+        end  
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if AimbotEnabled and LocalPlayer.Team then
+        local Closest,Dist
+        Closest,Dist = nil,math.huge
+        local Center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+        for _,plr in pairs(Players:GetPlayers()) do  
+            if plr ~= LocalPlayer and IsEnemy(plr) and plr.Character and plr.Character:FindFirstChild("Head") then  
+                local Head = plr.Character.Head  
+                local Pos, OnScreen = Camera:WorldToViewportPoint(Head.Position)  
+                if OnScreen then  
+                    local Mag = (Vector2.new(Pos.X,Pos.Y) - Center).Magnitude  
+                    if Mag &lt; Dist then  
+                        Dist = Mag  
+                        Closest = Head  
+                    end  
+                end  
+             end  
+        end  
+        
+        if Closest then  
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Closest.Position)  
+        end  
+    end
+end)
+
